@@ -1,13 +1,20 @@
 package br.tiagohm.markdownview;
 
+import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.text.TextUtils;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.ViewGroup;
 import android.webkit.WebChromeClient;
+import android.webkit.WebResourceError;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
 import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
 
 import com.orhanobut.logger.Logger;
@@ -208,6 +215,10 @@ public class MarkdownView extends FrameLayout
         return renderer.render(parser.parse(text));
     }
 
+    public void setOnMarkdownLoadedListener(OnMarkdownLoadedListener listener) {
+        mWebView.setWebViewClient(new PageLoadedCallbackWebViewClient(listener));
+    }
+
     public void loadMarkdown(String text)
     {
         String html = parseBuildAndRender(text);
@@ -258,6 +269,10 @@ public class MarkdownView extends FrameLayout
     public void loadMarkdownFromUrl(String url)
     {
         new LoadMarkdownUrlTask().execute(url);
+    }
+
+    public interface OnMarkdownLoadedListener {
+        void onMarkdownLoaded();
     }
 
     public static class CustomAttributeProvider implements AttributeProvider
@@ -393,5 +408,18 @@ public class MarkdownView extends FrameLayout
         {
             loadMarkdown(s);
         }
+    }
+
+    private static class PageLoadedCallbackWebViewClient extends WebViewClient {
+        private final OnMarkdownLoadedListener mListener;
+
+      PageLoadedCallbackWebViewClient(OnMarkdownLoadedListener listener) {
+        this.mListener = listener;
+      }
+
+      @Override public void onPageFinished(WebView view, String url) {
+        super.onPageFinished(view, url);
+          mListener.onMarkdownLoaded();
+      }
     }
 }
